@@ -10,7 +10,10 @@ import SwiftUI
 
 class ViewController: UIViewController {
 
-    var items = [ToDo]()
+    var items = [ToDo(name: "due to farthest(4th)", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 1000.0)), ToDo(name: "due to soon but we got time(2nd)", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 10.0)),
+        ToDo(name: "due to a long time from now (3rd)", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 100.0)),
+        ToDo(name: "due to really soon", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 1.0))]
+    var placeToErase = 0
     
     @IBOutlet weak var todoListTableView: UITableView!
     
@@ -22,68 +25,33 @@ class ViewController: UIViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?){
-        let itemViewController = segue.destination as! ItemViewController
-        let item = items[self.todoListTableView.indexPathForSelectedRow!.row]
-        itemViewController.nameReceived = item.name
-        itemViewController.descReceived = item.desc
-        itemViewController.dueToReceived = item.dueTo
-        itemViewController.createdAtReceived = item.createdAt
+        if let itemViewController = segue.destination as? ItemViewController{
+            let row = self.todoListTableView.indexPathForSelectedRow!.row
+            let item = items[row]
+            itemViewController.nameReceived = item.name
+            itemViewController.descReceived = item.desc
+            itemViewController.dueToReceived = item.dueTo
+            itemViewController.createdAtReceived = item.createdAt
+            itemViewController.place = row
+        }
     }
     
-    @IBAction func editButtonPressed(_ sender: Any) {
-        
-        var idField = UITextField()
-        var nameField = UITextField()
-        var descField = UITextField()
-        var dateField = UITextField()
-        
-        let alert = UIAlertController(title: "modify item", message: "", preferredStyle: .alert)
-        let cancel = UIAlertAction(title: "cancel", style: .default)
-        let save = UIAlertAction(title: "save", style: .default){(save) in
-            let id = idField.text!
-            if id != ""{
-                if (Int(id)! >= 0) && (Int(id)!<self.items.count){
-                    let item = self.items[Int(id)!]
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateFormat = "yyyy-MM-dd"
-                    let date = try? dateFormatter.date(from: dateField.text!)
-                    if date != nil{
-                        item.dueTo = date!
-                    }
-                    if nameField.text != nil{
-                        item.name = nameField.text!
-                    }
-                    if descField.text != nil{
-                        item.desc = descField.text!
-                    }
-                    print("here")
-                    self.items[Int(id)!] = item
-                }
-            self.todoListTableView.reloadData()
-            }
+    @IBAction func erase(_ unwindSegue: UIStoryboardSegue) {
+        if let vc = unwindSegue.source as? ItemViewController {
+            self.items.remove(at: vc.place)
+            vc.dismiss(animated: true)
         }
-        
-        alert.addTextField{(text) in
-            idField = text
-            idField.placeholder = "ToDo id"
+    }
+    
+    @IBAction func cancel(_ unwindSegue:UIStoryboardSegue){
+        if let vc = unwindSegue.source as? ItemViewController {
+            vc.dismiss(animated: true)
         }
-        alert.addTextField{(text) in
-            nameField = text
-            nameField.placeholder = "ToDo name"
-        }
-        alert.addTextField{(text) in
-            descField = text
-            descField.placeholder = "ToDo desc"
-        }
-        alert.addTextField{(text) in
-            dateField = text
-            dateField.placeholder = "yyyy-MM-dd"
-        }
-        
-        alert.addAction(cancel)
-        alert.addAction(save)
-        
-        self.present(alert, animated: true, completion: nil)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        todoListTableView.reloadData()
     }
     
     @IBAction func addButtonPressed(_ sender: Any) {
@@ -154,6 +122,15 @@ class ViewController: UIViewController {
         self.present(alert, animated: true, completion: nil)
     }
     
+    func isMoreRecent(todo1:ToDo, todo2:ToDo) -> Bool{
+        return todo1.dueTo < todo2.dueTo
+    }
+    
+    @IBAction func sortTodos(_ sender: Any) {
+        self.items = self.items.sorted(by: isMoreRecent)
+        todoListTableView.reloadData()
+    }
+    
 }
 
 extension ViewController : UITableViewDelegate, UITableViewDataSource{
@@ -168,9 +145,4 @@ extension ViewController : UITableViewDelegate, UITableViewDataSource{
         return cell
     }
     	
-    func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let controller = storyboard.instantiateViewController(withIdentifier: "viewItem") as! ItemViewController
-        self.navigationController?.pushViewController(controller, animated: true)
-    }
 }
