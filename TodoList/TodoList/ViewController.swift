@@ -28,7 +28,7 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view.
         
         navigationController?.delegate = self
-        
+        self.itemsFiltered = self.items
         for item in items{
             if Calendar.current.isDateInToday(item.dueTo){
                 today.append(item)
@@ -101,6 +101,7 @@ class ViewController: UIViewController {
             if !(date == nil){
                 let newToDo = ToDo(name: nameField.text!, desc: descField.text!, dueTo:date!)
                 self.items.append(newToDo)
+                self.itemsFiltered.append(newToDo)
                 self.todoListTableView.reloadData()
             }
         }
@@ -185,11 +186,9 @@ extension ViewController : UITableViewDelegate, UITableViewDataSource, UINavigat
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        if searchText.isEmpty {
-            self.itemsFiltered = self.items
-        }
-        else{
-            self.itemsFiltered = self.items.filter { (todo) -> Bool in
+        self.itemsFiltered = self.items
+        if !searchText.isEmpty {
+            self.itemsFiltered = self.itemsFiltered.filter { (todo) -> Bool in
                 return todo.name.lowercased().contains(searchText.lowercased())
             }
         }

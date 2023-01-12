@@ -94,7 +94,6 @@ class CategoryViewController: UIViewController {
             let row = self.categoryListTableView.indexPathForSelectedRow!.row
             let category = categories[row]
             viewController.items = category.todos
-            viewController.itemsFiltered = category.todos
             viewController.category = row
             
         }
