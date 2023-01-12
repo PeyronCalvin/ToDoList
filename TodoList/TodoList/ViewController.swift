@@ -10,16 +10,47 @@ import SwiftUI
 
 class ViewController: UIViewController {
 
-    var items = [ToDo(name: "due to farthest(4th)", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 1000.0)), ToDo(name: "due to soon but we got time(2nd)", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 10.0)),
-        ToDo(name: "due to a long time from now (3rd)", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 100.0)),
-        ToDo(name: "due to really soon", desc: "show me the sort", dueTo: Date(timeIntervalSinceNow: 1.0))]
+    var items = [ToDo]()
+    var itemsFiltered = [ToDo]()
     var placeToErase = 0
+    var category = 0
+    
+    var today = [ToDo]()
+    var tomorrow = [ToDo]()
+    var thisWeek = [ToDo]()
+    var later = [ToDo]()
     
     @IBOutlet weak var todoListTableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        navigationController?.delegate = self
+        
+        for item in items{
+            if Calendar.current.isDateInToday(item.dueTo){
+                today.append(item)
+                thisWeek.append(item)
+            }
+            else if Calendar.current.isDateInTomorrow(item.dueTo){
+                tomorrow.append(item)
+                thisWeek.append(item)
+            }
+            else{
+                let startOfNow = Calendar.current.startOfDay(for: Date())
+                let startOfTimeStamp = Calendar.current.startOfDay(for: item.dueTo)
+                let components = Calendar.current.dateComponents([.day, .weekday], from: startOfNow, to: startOfTimeStamp)
+                let day = components.day!-components.weekday!
+                if  day<8{
+                    thisWeek.append(item)
+                }
+                else{
+                    later.append(item)
+                }
+            }
+        }
         todoListTableView.delegate = self
         todoListTableView.dataSource = self
     }
@@ -33,6 +64,7 @@ class ViewController: UIViewController {
             itemViewController.dueToReceived = item.dueTo
             itemViewController.createdAtReceived = item.createdAt
             itemViewController.place = row
+            
         }
     }
     
@@ -92,6 +124,7 @@ class ViewController: UIViewController {
         self.present(alert, animated: true, completion: nil)
     }
     
+    
     @IBAction func deleteButtonPressed(_ sender: Any) {
         var nameField = UITextField()
         
@@ -133,16 +166,37 @@ class ViewController: UIViewController {
     
 }
 
-extension ViewController : UITableViewDelegate, UITableViewDataSource{
+extension ViewController : UITableViewDelegate, UITableViewDataSource, UINavigationControllerDelegate, UISearchBarDelegate{
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return items.count
+        return itemsFiltered.count
         
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel!.text = items[indexPath.row].name
+        cell.textLabel!.text = itemsFiltered[indexPath.row].name
         return cell
+    }
+    
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+        if let vc = viewController as? CategoryViewController{
+            vc.categories[self.category].todos = self.itemsFiltered
+        }
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.isEmpty {
+            self.itemsFiltered = self.items
+        }
+        else{
+            self.itemsFiltered = self.items.filter { (todo) -> Bool in
+                return todo.name.lowercased().contains(searchText.lowercased())
+            }
+        }
+        todoListTableView.reloadData()
+       }
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+            searchBar.resignFirstResponder()
     }
     	
 }
