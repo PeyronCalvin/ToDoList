@@ -11,6 +11,7 @@ class ToDo{
     var desc = ""
     var createdAt = Date()
     var dueTo = Date()
+    var state = false
     
     func getDesc() -> String{
         return self.desc

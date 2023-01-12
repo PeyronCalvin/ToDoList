@@ -162,7 +162,25 @@ class ViewController: UIViewController {
     
     @IBAction func sortTodos(_ sender: Any) {
         self.items = self.items.sorted(by: isMoreRecent)
+        showFiltered()
+    }
+    
+    func showFiltered(){
+        self.itemsFiltered = self.items
+        if !searchBar.text!.isEmpty {
+            self.itemsFiltered = self.itemsFiltered.filter { (todo) -> Bool in
+                return todo.name.lowercased().contains(searchBar.text!.lowercased())
+            }
+        }
         todoListTableView.reloadData()
+    }
+    
+    @IBAction func changeValue(_ sender: Any) {
+        guard let isDone = sender as? UISwitch else { return }
+        //On récupere la cellule qui contient le switch qui à changé de valeur
+        guard let cell = isDone.superview?.superview as? UITableViewCell else { return }
+        guard let indexPath = todoListTableView.indexPath(for: cell) else { return }
+        self.items[indexPath.row].state = isDone.isOn
     }
     
 }
@@ -174,9 +192,10 @@ extension ViewController : UITableViewDelegate, UITableViewDataSource, UINavigat
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel!.text = itemsFiltered[indexPath.row].name
-        return cell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as? CustomTableViewCell
+        cell?.textLabel!.text = itemsFiltered[indexPath.row].name
+        cell?.isDone.isOn = itemsFiltered[indexPath.row].state
+        return cell! 
     }
     
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
@@ -186,13 +205,7 @@ extension ViewController : UITableViewDelegate, UITableViewDataSource, UINavigat
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        self.itemsFiltered = self.items
-        if !searchText.isEmpty {
-            self.itemsFiltered = self.itemsFiltered.filter { (todo) -> Bool in
-                return todo.name.lowercased().contains(searchText.lowercased())
-            }
-        }
-        todoListTableView.reloadData()
+        self.showFiltered()
        }
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
             searchBar.resignFirstResponder()
